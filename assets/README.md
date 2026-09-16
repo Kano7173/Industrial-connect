@@ -1,0 +1,1 @@
+IndustrialConnect visual asset directory. Add licensed/owned industrial photography here when available. The site should use real manufacturing imagery across the hero, capabilities, trust, and workflow sections.
