@@ -3,6 +3,8 @@ import { buyerAction } from '@/app/actions/buyer-action';
 import InspectionCountdown from '@/components/inspection-countdown';
 import { requireCurrentUser } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export default async function BuyerOrder({ params }: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await params;
   const user = await requireCurrentUser();
