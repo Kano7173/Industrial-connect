@@ -1,0 +1,7 @@
+'use client';
+import { useEffect, useRef } from 'react';
+export default function Hero3D(){
+ const sceneRef=useRef<HTMLDivElement>(null);
+ useEffect(()=>{const s=sceneRef.current;if(!s)return;const move=(e:PointerEvent)=>{const r=s.getBoundingClientRect();s.style.setProperty('--mx',String(((e.clientX-r.left)/r.width-.5)*2));s.style.setProperty('--my',String(((e.clientY-r.top)/r.height-.5)*2));};const leave=()=>{s.style.setProperty('--mx','0');s.style.setProperty('--my','0')};s.addEventListener('pointermove',move);s.addEventListener('pointerleave',leave);return()=>{s.removeEventListener('pointermove',move);s.removeEventListener('pointerleave',leave)}},[]);
+ return <div ref={sceneRef} className="hero-scene" aria-label="Interactive industrial procurement network visualization"><div className="hero-orbit orbit-a"/><div className="hero-orbit orbit-b"/><div className="hero-orbit orbit-c"/><div className="hero-core"><div className="core-grid"/><div className="core-ring ring-one"/><div className="core-ring ring-two"/><div className="core-ring ring-three"/><div className="core-center"><span>IC</span><small>PROCUREMENT<br/>NETWORK</small></div></div><div className="hero-node node-a"><b>RFQ</b><span>LIVE MATCH</span></div><div className="hero-node node-b"><b>₹50L+</b><span>CONTRACT</span></div><div className="hero-node node-c"><b>48H</b><span>INSPECTION</span></div><div className="hero-node node-d"><b>QC</b><span>PROOF LAYER</span></div><div className="hero-scan"/></div>;
+}
