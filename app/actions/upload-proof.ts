@@ -20,8 +20,8 @@ export async function uploadProof(formData: FormData): Promise<void> {
     await tx.orderMilestone.create({ data: { orderId: order.id, stepName: input.stepName, fileUrl: input.fileUrl, uploadedBy: 'SUPPLIER', uploadedByUserId: user.id } });
     const target = nextStatus[input.stepName];
     if (rank[target] > rank[order.status]) await tx.order.update({ where: { id: order.id }, data: target === 'DISPATCHED' ? { status: target, inspectionDeadlineAt: new Date(Date.now() + 48 * 60 * 60 * 1000) } : { status: target } });
-    await tx.escrowLedgerEntry.create({ data: { orderId: order.id, type: 'PROOF_UPLOADED', amount: 0, referenceId: input.stepName, metadata: { fileUrl: input.fileUrl } });
-    await tx.orderEvent.create({ data: { orderId: order.id, type: 'PROOF_UPLOADED', actorUserId: user.id, metadata: { stepName: input.stepName } });
+    await tx.escrowLedgerEntry.create({ data: { orderId: order.id, type: 'PROOF_UPLOADED', amount: 0, referenceId: input.stepName, metadata: { fileUrl: input.fileUrl } } });
+    await tx.orderEvent.create({ data: { orderId: order.id, type: 'PROOF_UPLOADED', actorUserId: user.id, metadata: { stepName: input.stepName } } });
   });
   revalidatePath(`/dashboard/supplier/${order.id}`);
   revalidatePath(`/dashboard/buyer/${order.id}`);
