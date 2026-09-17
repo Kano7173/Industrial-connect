@@ -1,0 +1,7 @@
+{
+  "name": "industrialconnect-next",
+  "private": true,
+  "scripts": {"dev": "next dev", "build": "next build", "start": "next start", "prisma:generate": "prisma generate", "prisma:migrate": "prisma migrate dev"},
+  "dependencies": {"@prisma/client": "latest", "next": "latest", "react": "latest", "react-dom": "latest", "zod": "latest"},
+  "devDependencies": {"@types/node": "latest", "@types/react": "latest", "@types/react-dom": "latest", "autoprefixer": "^10.4.21", "prisma": "latest", "tailwindcss": "^3.4.17", "typescript": "latest"}
+}
