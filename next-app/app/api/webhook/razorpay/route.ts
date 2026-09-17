@@ -14,7 +14,6 @@ function validSignature(rawBody: string, signature: string, secret: string) {
 export async function POST(request: Request) {
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
   if (!secret) return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 });
-
   const rawBody = await request.text();
   const signature = request.headers.get('x-razorpay-signature');
   const eventId = request.headers.get('x-razorpay-event-id');
@@ -23,17 +22,11 @@ export async function POST(request: Request) {
 
   let payload: any;
   try { payload = JSON.parse(rawBody); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
-
   const eventType = String(payload?.event ?? '');
-  const supported = new Set(['payment.captured', 'order.paid', 'virtual_account.credited']);
-  if (!supported.has(eventType)) return NextResponse.json({ received: true, ignored: true });
+  if (!new Set(['payment.captured', 'order.paid', 'virtual_account.credited']).has(eventType)) return NextResponse.json({ received: true, ignored: true });
 
-  try {
-    await prisma.webhookEvent.create({ data: { eventId, eventType, payload } });
-  } catch (error: any) {
-    if (error?.code === 'P2002') return NextResponse.json({ received: true, duplicate: true });
-    throw error;
-  }
+  try { await prisma.webhookEvent.create({ data: { eventId, eventType, payload } }); }
+  catch (error: any) { if (error?.code === 'P2002') return NextResponse.json({ received: true, duplicate: true }); throw error; }
 
   const payment = payload?.payload?.payment?.entity;
   const virtualAccount = payload?.payload?.virtual_account?.entity;
@@ -45,14 +38,7 @@ export async function POST(request: Request) {
   const providerPaymentId = payment?.id;
   const amountPaise = Number(payment?.amount ?? bankTransfer?.amount ?? 0);
 
-  const order = orderId
-    ? await prisma.order.findUnique({ where: { id: String(orderId) } })
-    : orderNumber
-      ? await prisma.order.findUnique({ where: { orderNumber: String(orderNumber) } })
-      : razorpayOrderId
-        ? await prisma.order.findUnique({ where: { razorpayOrderId: String(razorpayOrderId) } })
-        : null;
-
+  const order = orderId ? await prisma.order.findUnique({ where: { id: String(orderId) } }) : orderNumber ? await prisma.order.findUnique({ where: { orderNumber: String(orderNumber) } }) : razorpayOrderId ? await prisma.order.findUnique({ where: { razorpayOrderId: String(razorpayOrderId) } }) : null;
   if (!order) return NextResponse.json({ received: true, reconciled: false });
 
   const expectedPaise = Math.round(order.amount.toNumber() * 100);
@@ -62,24 +48,10 @@ export async function POST(request: Request) {
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.payment.upsert({
-      where: { providerEventId: eventId },
-      create: { orderId: order.id, providerEventId: eventId, providerPaymentId, amount: amountPaise / 100, status: 'CAPTURED', method: payment?.method ?? 'bank_transfer', rawPayload: payload },
-      update: { status: 'CAPTURED', providerPaymentId, rawPayload: payload },
-    });
-
+    await tx.payment.upsert({ where: { providerEventId: eventId }, create: { orderId: order.id, providerEventId: eventId, providerPaymentId, amount: amountPaise / 100, status: 'CAPTURED', method: payment?.method ?? 'bank_transfer', rawPayload: payload }, update: { status: 'CAPTURED', providerPaymentId, rawPayload: payload } });
     const shouldLock = order.status === 'PENDING_ESCROW';
-    await tx.order.update({
-      where: { id: order.id },
-      data: shouldLock
-        ? { status: 'ESCROW_LOCKED', escrowLockedAt: new Date(), inspectionDeadlineAt: new Date(Date.now() + 48 * 60 * 60 * 1000), razorpayPaymentId: providerPaymentId, bankReference: bankTransfer?.bank_reference }
-        : { razorpayPaymentId: providerPaymentId, bankReference: bankTransfer?.bank_reference },
-    });
-
-    if (shouldLock) {
-      await tx.escrowLedgerEntry.create({ data: { orderId: order.id, type: 'ESCROW_LOCKED', amount: order.amount, referenceId: providerPaymentId, metadata: { eventId, eventType } } });
-    }
+    await tx.order.update({ where: { id: order.id }, data: shouldLock ? { status: 'ESCROW_LOCKED', escrowLockedAt: new Date(), razorpayPaymentId: providerPaymentId, bankReference: bankTransfer?.bank_reference } : { razorpayPaymentId: providerPaymentId, bankReference: bankTransfer?.bank_reference } });
+    if (shouldLock) await tx.escrowLedgerEntry.create({ data: { orderId: order.id, type: 'ESCROW_LOCKED', amount: order.amount, referenceId: providerPaymentId, metadata: { eventId, eventType } } });
   });
-
   return NextResponse.json({ received: true, reconciled: true });
 }
