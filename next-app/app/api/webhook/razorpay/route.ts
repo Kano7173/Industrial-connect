@@ -11,12 +11,6 @@ function validSignature(rawBody: string, signature: string, secret: string) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-function readPath(value: unknown, path: string[]): unknown {
-  let current: any = value;
-  for (const key of path) current = current?.[key];
-  return current;
-}
-
 export async function POST(request: Request) {
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
   if (!secret) return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 });
@@ -74,13 +68,15 @@ export async function POST(request: Request) {
       update: { status: 'CAPTURED', providerPaymentId, rawPayload: payload },
     });
 
-    const nextStatus = order.status === 'PENDING_ESCROW' ? 'ESCROW_LOCKED' : order.status;
+    const shouldLock = order.status === 'PENDING_ESCROW';
     await tx.order.update({
       where: { id: order.id },
-      data: nextStatus === 'ESCROW_LOCKED' ? { status: nextStatus, escrowLockedAt: new Date(), inspectionDeadlineAt: null, razorpayPaymentId: providerPaymentId, bankReference: bankTransfer?.bank_reference } : { razorpayPaymentId: providerPaymentId, bankReference: bankTransfer?.bank_reference },
+      data: shouldLock
+        ? { status: 'ESCROW_LOCKED', escrowLockedAt: new Date(), inspectionDeadlineAt: new Date(Date.now() + 48 * 60 * 60 * 1000), razorpayPaymentId: providerPaymentId, bankReference: bankTransfer?.bank_reference }
+        : { razorpayPaymentId: providerPaymentId, bankReference: bankTransfer?.bank_reference },
     });
 
-    if (nextStatus === 'ESCROW_LOCKED') {
+    if (shouldLock) {
       await tx.escrowLedgerEntry.create({ data: { orderId: order.id, type: 'ESCROW_LOCKED', amount: order.amount, referenceId: providerPaymentId, metadata: { eventId, eventType } } });
     }
   });
