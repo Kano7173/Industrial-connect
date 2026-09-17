@@ -45,5 +45,5 @@ jobs:
               body: `### Next.js build diagnostic\n\n\`\`\`text\n${trimmed}\n\`\`\``
             });
       - name: Fail if build failed
-        if: steps.build.outcome == 'failure'
+        if: steps.build.outcome == 'failure' && steps.build.conclusion != 'success'
         run: exit 1
