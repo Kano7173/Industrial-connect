@@ -2,6 +2,8 @@ import { prisma } from '@/lib/prisma';
 import { resolveDispute } from '@/app/actions/resolve-dispute';
 import { requireCurrentUser } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminDispute({ params }: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await params;
   const user = await requireCurrentUser();
