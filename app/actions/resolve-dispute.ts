@@ -1,0 +1,40 @@
+'use server';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
+import { prisma } from '@/lib/prisma';
+import { requireCurrentUser } from '@/lib/auth';
+import { refundCapturedPayment, transferToLinkedAccount } from '@/lib/razorpay';
+
+const schema = z.object({ orderId: z.string().min(1), decision: z.enum(['REFUND', 'RELEASE']) });
+
+export async function resolveDispute(fd: FormData): Promise<void> {
+  const user = await requireCurrentUser();
+  if (user.role !== 'ADMIN') throw new Error('Only admins can resolve disputes.');
+  const input = schema.parse({ orderId: fd.get('orderId'), decision: fd.get('decision') });
+  const order = await prisma.order.findUnique({ where: { id: input.orderId }, include: { supplier: true } });
+  if (!order || order.status !== 'DISPUTED') throw new Error('Open disputed order not found.');
+
+  if (input.decision === 'REFUND') {
+    if (!order.razorpayPaymentId) throw new Error('No captured payment is linked.');
+    const refund = await refundCapturedPayment({ paymentId: order.razorpayPaymentId, amountRupees: order.amount.toNumber(), receipt: `refund-${order.id}` });
+    await prisma.$transaction(async tx => {
+      const now = new Date();
+      await tx.order.update({ where: { id: order.id }, data: { status: 'REFUNDED', refundedAt: now } });
+      await tx.dispute.updateMany({ where: { orderId: order.id, status: 'OPEN' }, data: { status: 'RESOLVED_REFUND', resolvedAt: now } });
+      await tx.payment.updateMany({ where: { orderId: order.id, providerPaymentId: order.razorpayPaymentId! }, data: { status: 'REFUNDED' } });
+      await tx.escrowLedgerEntry.create({ data: { orderId: order.id, type: 'REFUND_COMPLETED', amount: order.amount, referenceId: refund.id, metadata: { adminId: user.id } } });
+    });
+  } else {
+    if (!order.supplier.razorpayLinkedAccountId) throw new Error('Supplier marketplace payout is not enabled.');
+    const transfer = await transferToLinkedAccount({ linkedAccountId: order.supplier.razorpayLinkedAccountId, amountRupees: order.amount.toNumber(), referenceId: `dispute-release-${order.id}` });
+    await prisma.$transaction(async tx => {
+      const now = new Date();
+      await tx.order.update({ where: { id: order.id }, data: { status: 'COMPLETED', completedAt: now } });
+      await tx.payout.upsert({ where: { orderId: order.id }, create: { orderId: order.id, supplierId: order.supplierId, amount: order.amount, status: 'PAID', providerRef: transfer.id, idempotencyKey: `payout-${order.id}` }, update: { status: 'PAID', providerRef: transfer.id } });
+      await tx.dispute.updateMany({ where: { orderId: order.id, status: 'OPEN' }, data: { status: 'RESOLVED_RELEASE', resolvedAt: now } });
+      await tx.escrowLedgerEntry.create({ data: { orderId: order.id, type: 'PAYOUT_COMPLETED', amount: order.amount, referenceId: transfer.id, metadata: { adminId: user.id } } });
+    });
+  }
+  revalidatePath(`/dashboard/buyer/${order.id}`);
+  revalidatePath(`/dashboard/supplier/${order.id}`);
+}

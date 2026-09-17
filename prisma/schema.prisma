@@ -1,0 +1,219 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDING_ESCROW
+  ESCROW_LOCKED
+  MATERIAL_UPLOADED
+  PRODUCTION_VIDEO_ADDED
+  DISPATCHED
+  COMPLETED
+  DISPUTED
+  REFUNDED
+}
+
+enum ProofUploader {
+  SUPPLIER
+  BUYER
+}
+
+enum DisputeStatus {
+  OPEN
+  RESOLVED_REFUND
+  RESOLVED_RELEASE
+}
+
+enum DisputeReason {
+  QUALITY
+  DEFECT
+  WRONG_QUANTITY
+  WRONG_MATERIAL
+  LATE_DELIVERY
+  DAMAGE
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+enum PayoutStatus {
+  PENDING
+  ELIGIBLE
+  PROCESSING
+  PAID
+  ON_HOLD
+}
+
+enum UserRole {
+  BUYER
+  SUPPLIER
+  ADMIN
+}
+
+enum OrderEventType {
+  ORDER_CREATED
+  PAYMENT_LOCKED
+  PROOF_UPLOADED
+  DISPATCHED
+  INSPECTION_STARTED
+  BUYER_RELEASED
+  DISPUTE_OPENED
+  REFUND_REQUESTED
+  REFUND_COMPLETED
+  PAYOUT_REQUESTED
+  PAYOUT_COMPLETED
+  ADMIN_RESOLUTION
+}
+
+model User {
+  id String @id @default(cuid())
+  name String?
+  email String @unique
+  role UserRole
+  razorpayLinkedAccountId String?
+  createdAt DateTime @default(now())
+  buyerOrders Order[] @relation("BuyerOrders")
+  supplierOrders Order[] @relation("SupplierOrders")
+  proofs OrderMilestone[]
+  disputes Dispute[]
+  payouts Payout[]
+}
+
+model Order {
+  id String @id @default(cuid())
+  orderNumber String @unique
+  amount Decimal @db.Decimal(15, 2)
+  currency String @default("INR")
+  status OrderStatus @default(PENDING_ESCROW)
+  buyerId String
+  supplierId String
+  buyer User @relation("BuyerOrders", fields: [buyerId], references: [id])
+  supplier User @relation("SupplierOrders", fields: [supplierId], references: [id])
+  inspectionDeadlineAt DateTime?
+  escrowLockedAt DateTime?
+  completedAt DateTime?
+  disputedAt DateTime?
+  refundedAt DateTime?
+  razorpayOrderId String? @unique
+  razorpayPaymentId String?
+  bankReference String?
+  milestones OrderMilestone[]
+  disputes Dispute[]
+  payments Payment[]
+  ledgerEntries EscrowLedgerEntry[]
+  events OrderEvent[]
+  payout Payout?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([buyerId, status])
+  @@index([supplierId, status])
+  @@index([status, inspectionDeadlineAt])
+}
+
+model OrderMilestone {
+  id String @id @default(cuid())
+  orderId String
+  stepName String
+  fileUrl String
+  uploadedBy ProofUploader
+  uploadedByUserId String
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [uploadedByUserId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([orderId, stepName])
+}
+
+model Dispute {
+  id String @id @default(cuid())
+  orderId String
+  raisedById String
+  reason DisputeReason
+  details String
+  status DisputeStatus @default(OPEN)
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  raisedBy User @relation(fields: [raisedById], references: [id])
+  createdAt DateTime @default(now())
+  resolvedAt DateTime?
+
+  @@index([orderId, status])
+}
+
+model Payment {
+  id String @id @default(cuid())
+  orderId String
+  provider String @default("RAZORPAY")
+  providerEventId String? @unique
+  providerPaymentId String?
+  amount Decimal @db.Decimal(15, 2)
+  status PaymentStatus @default(PENDING)
+  method String?
+  rawPayload Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, status])
+}
+
+model EscrowLedgerEntry {
+  id String @id @default(cuid())
+  orderId String
+  type String
+  amount Decimal @db.Decimal(15, 2)
+  referenceId String?
+  metadata Json?
+  createdAt DateTime @default(now())
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+}
+
+model OrderEvent {
+  id String @id @default(cuid())
+  orderId String
+  type OrderEventType
+  actorUserId String?
+  referenceId String?
+  metadata Json?
+  createdAt DateTime @default(now())
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+}
+
+model WebhookEvent {
+  id String @id @default(cuid())
+  eventId String @unique
+  eventType String
+  receivedAt DateTime @default(now())
+  processedAt DateTime?
+  payload Json
+
+  @@index([eventType, receivedAt])
+}
+
+model Payout {
+  id String @id @default(cuid())
+  orderId String @unique
+  supplierId String
+  amount Decimal @db.Decimal(15, 2)
+  status PayoutStatus @default(PENDING)
+  providerRef String?
+  idempotencyKey String @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order Order @relation(fields: [orderId], references: [id])
+  supplier User @relation(fields: [supplierId], references: [id])
+}

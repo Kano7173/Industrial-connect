@@ -1,0 +1,49 @@
+name: Next.js build
+
+on:
+  push:
+    branches: ['main','integration/industrialconnect-next']
+  pull_request:
+    branches: ['main']
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.18.0
+      - run: npm install
+      - run: npx prisma generate
+      - name: Build Next.js
+        id: build
+        continue-on-error: true
+        env:
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/industrialconnect
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee build.log
+      - name: Publish build diagnostics to PR
+        if: steps.build.outcome == 'failure' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          BUILD_LOG: build.log
+        with:
+          script: |
+            const fs = require('fs');
+            const log = fs.readFileSync(process.env.BUILD_LOG, 'utf8');
+            const trimmed = log.length > 12000 ? log.slice(-12000) : log;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `### Next.js build diagnostic\n\n\`\`\`text\n${trimmed}\n\`\`\``
+            });
+      - name: Fail if build failed
+        if: steps.build.outcome == 'failure' && steps.build.conclusion != 'success'
+        run: exit 1
