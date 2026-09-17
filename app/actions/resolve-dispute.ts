@@ -32,7 +32,7 @@ export async function resolveDispute(fd: FormData): Promise<void> {
       await tx.order.update({ where: { id: order.id }, data: { status: 'COMPLETED', completedAt: now } });
       await tx.payout.upsert({ where: { orderId: order.id }, create: { orderId: order.id, supplierId: order.supplierId, amount: order.amount, status: 'PAID', providerRef: transfer.id, idempotencyKey: `payout-${order.id}` }, update: { status: 'PAID', providerRef: transfer.id } });
       await tx.dispute.updateMany({ where: { orderId: order.id, status: 'OPEN' }, data: { status: 'RESOLVED_RELEASE', resolvedAt: now } });
-      await tx.escrowLedgerEntry.create({ data: { orderId: order.id, type: 'PAYOUT_COMPLETED', amount: order.amount, referenceId: transfer.id, metadata: { adminId: user.id } });
+      await tx.escrowLedgerEntry.create({ data: { orderId: order.id, type: 'PAYOUT_COMPLETED', amount: order.amount, referenceId: transfer.id, metadata: { adminId: user.id } } });
     });
   }
   revalidatePath(`/dashboard/buyer/${order.id}`);
