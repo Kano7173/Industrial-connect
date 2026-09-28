@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 const scenes = [
-  { kicker: 'INDUSTRIAL CONNECT / 01', title: 'THE PART', copy: 'A drawing becomes a clear manufacturing requirement.' },
-  { kicker: 'INDUSTRIAL CONNECT / 02', title: 'THE NETWORK', copy: 'Relevant Indian manufacturers appear as capacity, not a directory.' },
-  { kicker: 'INDUSTRIAL CONNECT / 03', title: 'THE ORDER', copy: 'Quotes, payment, production evidence and quality stay connected.' },
-  { kicker: 'INDUSTRIAL CONNECT / 04', title: 'THE DELIVERY', copy: 'Dispatch, inspection and acceptance close the loop.' },
+  { kicker: 'RFQWORKS / 01', title: 'THE PART', copy: 'A drawing becomes a clear manufacturing requirement.' },
+  { kicker: 'RFQWORKS / 02', title: 'THE NETWORK', copy: 'Relevant Indian manufacturers appear as capacity, not a directory.' },
+  { kicker: 'RFQWORKS / 03', title: 'THE ORDER', copy: 'Quotes, payment, production evidence and quality stay connected.' },
+  { kicker: 'RFQWORKS / 04', title: 'THE DELIVERY', copy: 'Dispatch, inspection and acceptance close the loop.' },
 ];
 
 function MachinePart() {
@@ -37,7 +37,7 @@ export default function CinematicHome() {
 
   return <main className="cinematic-site">
     <nav className="cinematic-nav">
-      <Link href="/" className="cinematic-brand"><span>IC</span><b>INDUSTRIAL CONNECT</b></Link>
+      <Link href="/" className="cinematic-brand"><span>IC</span><b>RFQWORKS</b></Link>
       <div className="cinematic-nav-center"><span>INDIA / 2026</span><span>PROCUREMENT NETWORK</span></div>
       <Link href="/dashboard/buyer/demo" className="nav-cta">POST REQUIREMENT ↗</Link>
     </nav>
@@ -57,7 +57,7 @@ export default function CinematicHome() {
 
     <section className="story-panel panel-requirement">
       <div><small>01 / REQUIREMENT</small><h2>Don't search for<br /><em>factories.</em></h2></div>
-      <p>Describe the part once. Upload your drawing, quantity, material and delivery window. IndustrialConnect turns it into a structured RFQ.</p>
+      <p>Describe the part once. Upload your drawing, quantity, material and delivery window. RFQWorks turns it into a structured RFQ.</p>
     </section>
 
     <section className="story-panel panel-matching">
@@ -76,6 +76,6 @@ export default function CinematicHome() {
       <div><small>04 / ACCEPTANCE</small><h2>Make it.<br /><em>Move it.</em></h2><p>Delivery is not the finish line. Buyer inspection and acceptance close the transaction before supplier payout becomes eligible.</p><Link href="/dashboard/buyer/demo" className="finish-cta">START A REQUIREMENT ↗</Link></div>
       <div className="finish-metric"><b>₹50K</b><span>PILOT BATCHES</span><b>₹50L+</b><span>INDUSTRIAL CONTRACTS</span><b>48H</b><span>INSPECTION WINDOW</span></div>
     </section>
-    <footer className="cinematic-footer"><span>INDUSTRIAL CONNECT</span><span>BUILT FOR INDIAN MANUFACTURING</span><span>© 2026</span></footer>
+    <footer className="cinematic-footer"><span>RFQWORKS</span><span>BUILT FOR INDIAN MANUFACTURING</span><span>© 2026</span></footer>
   </main>;
 }
