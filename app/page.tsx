@@ -1,5 +1,5 @@
-import CinematicHome from '@/components/cinematic-home';
+import RFQWorksHome from '@/components/rfqworks-home';
 
 export default function Home() {
-  return <CinematicHome />;
+  return <RFQWorksHome />;
 }
