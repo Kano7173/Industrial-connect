@@ -175,3 +175,10 @@ button{cursor:pointer}
 .supplier-panel-note{margin-top:20px;padding-top:18px;border-top:1px solid #333b36;color:#aab2ad;font-size:9px;line-height:1.6}
 @media(max-width:900px){.supplier-flow-top,.supplier-flow-grid{grid-template-columns:1fr;gap:30px}}
 @media(max-width:600px){.supplier-trust-flow{padding:75px 0}.supplier-flow-top h2{font-size:48px}.supplier-flow-top p{font-size:14px}.flow-step{grid-template-columns:34px 1fr;padding:18px 17px}.supplier-trust-panel{padding:21px}.supplier-trust-panel h3{font-size:34px}}
+
+
+.supplier-today-bar{margin-top:16px;padding:16px 18px;background:#dfe6dc;border:1px solid #ccd5cb;border-radius:10px;display:grid;grid-template-columns:1fr 1fr auto;gap:18px;align-items:center}
+.supplier-today-bar b{display:block;font:500 9px 'DM Mono';letter-spacing:.12em;color:#536057}
+.supplier-today-bar span{display:block;font-size:10px;color:#68716c;margin-top:4px}
+@media(max-width:900px){.supplier-today-bar{grid-template-columns:1fr 1fr}.supplier-today-bar .button{grid-column:1/-1;justify-self:start}}
+@media(max-width:600px){.supplier-today-bar{grid-template-columns:1fr;gap:13px}.supplier-today-bar .button{grid-column:auto;width:100%}}
