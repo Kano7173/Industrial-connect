@@ -48,18 +48,19 @@ export default function RFQWorksHome(){
    <div className="hero-grid container">
     <div className="hero-copy">
      <div className="eyebrow"><span className="live-dot"/> GUJARAT MANUFACTURERS · PAN-INDIA BUYERS</div>
-     <h1>Industrial orders.<br/><em>Matched properly.</em></h1>
-     <p className="hero-lead">RFQWorks connects Indian buyers with capable manufacturers — starting with Gujarat's strong CNC, casting, fabrication and job-work ecosystem.</p>
-     <div className="hero-actions"><Link href="/post-requirement" className="button button-accent button-large">I need a manufacturer →</Link><Link href="/supplier/join" className="button button-dark button-large">I am a manufacturer →</Link></div>
-     <div className="trust-strip"><div><strong>PAN-INDIA DEMAND</strong><span>Buyers from every state</span></div><div><strong>GUJARAT SUPPLY</strong><span>Manufacturing-first network</span></div><div><strong>ORDER WORKFLOW</strong><span>RFQ → quote → order → delivery</span></div></div>
+     <h1>Source the part.<br/><em>Run the order.</em></h1>
+     <p className="hero-lead">RFQWorks gives industrial buyers one structured route from drawing and quantity to manufacturer quotes, production updates, QC and delivery — with Gujarat as the starting supply network.</p>
+     <div className="hero-actions"><Link href="/post-requirement" className="button button-accent button-large">Post a requirement →</Link><Link href="/supplier/join" className="button button-dark button-large">Join as manufacturer →</Link></div>
+     <div className="hero-operating"><div><b>01</b><span>REQUIREMENT</span><small>Drawing · quantity · deadline</small></div><i>→</i><div><b>02</b><span>MATCH & QUOTE</span><small>Capability · price · lead time</small></div><i>→</i><div><b>03</b><span>ORDER</span><small>PO · production · QC · delivery</small></div></div>
+     <div className="trust-strip"><div><strong>BUYER SIDE</strong><span>Structured RFQs</span></div><div><strong>SUPPLIER SIDE</strong><span>Relevant work only</span></div><div><strong>ORDER SIDE</strong><span>One connected workflow</span></div></div>
     </div>
     <div className="hero-interface">
      <div className="interface-glow"/>
      <div className="hero-console">
-      <div className="console-top"><span>LIVE PROCUREMENT FLOW</span><span className="status-pill">EXAMPLE RFQ</span></div>
+      <div className="console-top"><span>PROCUREMENT WORKSPACE</span><span className="status-pill">EXAMPLE FLOW</span></div>
       <div className="hero-order-card"><div className="order-top"><span>EXAMPLE RFQ</span><b>QUOTE REQUEST</b></div><h3>CNC turned shaft components</h3><p>EN8 · 5,000 pcs · Ahmedabad delivery</p><div className="order-tags"><span>DRAWING</span><span>TOLERANCE</span><span>MONTHLY</span></div></div>
       <div className="quote-stack"><div><b>01</b><span>Supplier quote</span><strong>Price + lead time</strong></div><div><b>02</b><span>Supplier quote</span><strong>Capacity + terms</strong></div><div><b>03</b><span>Supplier quote</span><strong>Technical fit</strong></div></div>
-      <div className="match-line"><span/> <b>MATCH</b> relevant manufacturers are invited based on capability</div>
+      <div className="match-line"><span/> <b>WORKFLOW</b> requirement → matched suppliers → quote comparison → order room</div>
      </div>
      <div className="floating-card card-verified"><span>✓</span><div><b>Buyer requirement first</b><small>Specs · quantity · delivery · quality</small></div></div>
      <div className="floating-card card-quote"><small>SUPPLIER VIEW</small><b>CHOOSE RFQ</b><span>Quote only when it fits your capacity</span></div>
