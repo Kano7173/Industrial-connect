@@ -69,6 +69,30 @@ export default function RFQWorksHome(){
 
   <div className="process-ticker"><div>BUYER REQUIREMENT <i>→</i> CAPABILITY MATCH <i>→</i> SUPPLIER QUOTES <i>→</i> ORDER <i>→</i> PRODUCTION <i>→</i> QC <i>→</i> DELIVERY</div></div>
 
+  <section className="supplier-trust-flow">
+   <div className="container">
+    <div className="supplier-flow-top">
+     <div><div className="section-index">01 / FOR MANUFACTURERS</div><h2>Know exactly what happens<br/><em>after you join.</em></h2></div>
+     <div><p>RFQWorks is designed around one simple idea: manufacturers should not have to chase random enquiries. You see the requirement, decide if it fits your factory, quote, win the order and manage production from one place.</p><Link href="/supplier/join" className="button button-accent">Join the manufacturer network →</Link></div>
+    </div>
+    <div className="supplier-flow-grid">
+     <div className="supplier-flow-steps">
+      <div className="flow-step"><b>01</b><div><strong>Create your factory profile</strong><span>Add your location, processes, machines, materials, capacity and documents.</span></div></div>
+      <div className="flow-step"><b>02</b><div><strong>Get matched with relevant RFQs</strong><span>See requirements that fit your manufacturing capability and service area.</span></div></div>
+      <div className="flow-step"><b>03</b><div><strong>Review before you quote</strong><span>Check drawing/specification, quantity, delivery target and commercial context first.</span></div></div>
+      <div className="flow-step"><b>04</b><div><strong>Submit your quotation</strong><span>Set your price, lead time, terms and production commitment clearly.</span></div></div>
+      <div className="flow-step"><b>05</b><div><strong>Convert the quote into an order</strong><span>When the buyer selects you, the order room keeps PO, milestones and evidence together.</span></div></div>
+      <div className="flow-step"><b>06</b><div><strong>Produce, dispatch and close</strong><span>Share production/QC/dispatch evidence and complete the buyer acceptance workflow.</span></div></div>
+     </div>
+     <aside className="supplier-trust-panel">
+      <div><span className="panel-label">WHY A FACTORY WOULD JOIN</span><h3>Less noise.<br/>More control.</h3></div>
+      <ul><li><span>✓</span><div><b>Relevant opportunities</b><small>Built around process and capacity, not just keywords.</small></div></li><li><span>✓</span><div><b>Technical context</b><small>Review the requirement before spending time on a quote.</small></div></li><li><span>✓</span><div><b>One order room</b><small>Quote, PO, production updates, dispatch and documents stay connected.</small></div></li><li><span>✓</span><div><b>Business visibility</b><small>Build a professional manufacturer profile buyers can understand.</small></div></li><li><span>✓</span><div><b>You decide what to quote</b><small>RFQWorks does not decide your price, capacity or commercial terms.</small></div></li></ul>
+      <div className="supplier-panel-note">Designed for Gujarat's CNC, VMC, casting, fabrication and job-work ecosystem — with buyer demand from across India.</div>
+     </aside>
+    </div>
+   </div>
+  </section>
+
   <section className="trust-section" id="buyers">
    <div className="container trust-grid">
     <div><div className="section-index">01 / WHY A BUYER TRUSTS THE FIRST SCREEN</div><h2>One requirement.<br/><em>One clear process.</em></h2><p>Buyers should understand in seconds what happens after they submit a drawing. RFQWorks is built to turn a messy supplier search into a structured procurement journey.</p></div>
