@@ -182,3 +182,12 @@ button{cursor:pointer}
 .supplier-today-bar span{display:block;font-size:10px;color:#68716c;margin-top:4px}
 @media(max-width:900px){.supplier-today-bar{grid-template-columns:1fr 1fr}.supplier-today-bar .button{grid-column:1/-1;justify-self:start}}
 @media(max-width:600px){.supplier-today-bar{grid-template-columns:1fr;gap:13px}.supplier-today-bar .button{grid-column:auto;width:100%}}
+
+
+.onboarding-checklist{margin-top:14px;border:1px solid #dce2db;border-radius:10px;background:#fff;overflow:hidden}
+.onboarding-checklist>div{display:grid;grid-template-columns:30px 1fr auto;gap:8px;align-items:center;padding:13px 10px;border-bottom:1px solid #e4e8e3}
+.onboarding-checklist>div:last-child{border-bottom:0}
+.onboarding-checklist b,.onboarding-checklist i{font:500 8px 'DM Mono';color:#7a837d}
+.onboarding-checklist span{font-size:10px;color:#4f5852}
+.onboarding-checklist i{font-style:normal}
+.supplier-side-note{margin-top:13px;padding:12px;border-radius:8px;background:#edf2ea;color:#69726c;font-size:9px;line-height:1.6}
