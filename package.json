@@ -1,13 +1,14 @@
 {
   "name": "industrial-connect",
   "private": true,
-  "engines": { "node": ">=20.0.0" },
+  "engines": { "node": ">=22.18.0" },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:migrate": "prisma migrate dev",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "6.19.0",
