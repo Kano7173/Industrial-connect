@@ -1,9 +1,10 @@
 import './globals.css';
+import './ecosystem.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'RFQWorks — India’s industrial sourcing & manufacturing network',
-  description: 'RFQWorks connects industrial buyers with manufacturers for structured RFQs, quotations and protected transaction workflows.',
+  title: 'Industrial Connect — Industrial procurement operating system',
+  description: 'Industrial Connect connects buyers, manufacturers and order workflows from RFQ to delivery, quality and commission tracking.',
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
 };
 
