@@ -75,6 +75,89 @@ enum OrderEventType {
   ADMIN_RESOLUTION
 }
 
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REVERIFY_REQUIRED
+  SUSPENDED
+  REJECTED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+  BLOCKED
+}
+
+enum PartyType {
+  BUYER
+  SUPPLIER
+}
+
+enum RFQStatus {
+  DRAFT
+  PENDING_REVIEW
+  MATCHING
+  QUOTING
+  NEGOTIATION
+  AWARDED
+  ORDERED
+  CLOSED
+  CANCELLED
+  FLAGGED
+}
+
+enum MatchStatus {
+  INVITED
+  VIEWED
+  QUOTED
+  DECLINED
+  DISQUALIFIED
+}
+
+enum QuoteStatus {
+  DRAFT
+  SUBMITTED
+  SHORTLISTED
+  NEGOTIATING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum VerificationType {
+  GST
+  PAN
+  CIN
+  LLPIN
+  BANK
+  IDENTITY
+  ADDRESS
+  FACTORY
+  CERTIFICATION
+  CAPABILITY
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  STATUS_CHANGE
+  VERIFY
+  REJECT
+  SUSPEND
+  BLOCK
+  UNBLOCK
+  VIEW
+  EXPORT
+  LOGIN
+  LOGOUT
+  PAYMENT
+  DISPUTE
+}
+
 model User {
   id String @id @default(cuid())
   name String?
@@ -216,4 +299,321 @@ model Payout {
   updatedAt DateTime @updatedAt
   order Order @relation(fields: [orderId], references: [id])
   supplier User @relation(fields: [supplierId], references: [id])
+}
+
+// Industrial Connect trust and procurement domain.
+// These models are intentionally separated from payment-provider data so regulated
+// payment custody remains with the configured payment provider/financial partner.
+model Organization {
+  id String @id @default(cuid())
+  legalName String
+  tradeName String?
+  gstin String? @unique
+  pan String?
+  cin String?
+  llpin String?
+  emailDomain String?
+  phone String?
+  registeredAddress String?
+  factoryAddress String?
+  partyType PartyType
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  riskLevel RiskLevel @default(MEDIUM)
+  trustScore Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([partyType, verificationStatus])
+  @@index([riskLevel, trustScore])
+}
+
+model VerificationCase {
+  id String @id @default(cuid())
+  organizationId String
+  type VerificationType
+  status VerificationStatus @default(PENDING)
+  provider String?
+  referenceHash String?
+  documentUrl String?
+  reviewedBy String?
+  reason String?
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([organizationId, type])
+  @@index([status, expiresAt])
+}
+
+model RiskSignal {
+  id String @id @default(cuid())
+  organizationId String?
+  userId String?
+  orderId String?
+  code String
+  severity RiskLevel
+  score Int
+  description String
+  evidence Json?
+  resolved Boolean @default(false)
+  createdAt DateTime @default(now())
+  resolvedAt DateTime?
+  @@index([organizationId, resolved, severity])
+  @@index([orderId, resolved])
+}
+
+model Capability {
+  id String @id @default(cuid())
+  name String @unique
+  category String
+  description String?
+  createdAt DateTime @default(now())
+}
+
+model SupplierCapability {
+  id String @id @default(cuid())
+  supplierOrganizationId String
+  capabilityId String
+  proficiency Int @default(50)
+  verified Boolean @default(false)
+  evidenceUrl String?
+  createdAt DateTime @default(now())
+  @@unique([supplierOrganizationId, capabilityId])
+  @@index([capabilityId, verified, proficiency])
+}
+
+model Machine {
+  id String @id @default(cuid())
+  supplierOrganizationId String
+  machineType String
+  make String?
+  model String?
+  serialHash String?
+  capacityDescription String?
+  status String @default("ACTIVE")
+  utilizationPercent Int @default(0)
+  lastVerifiedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([supplierOrganizationId, status])
+}
+
+model Certification {
+  id String @id @default(cuid())
+  supplierOrganizationId String
+  name String
+  issuer String?
+  certificateNumberHash String?
+  documentUrl String?
+  status VerificationStatus @default(PENDING)
+  issuedAt DateTime?
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([supplierOrganizationId, status, expiresAt])
+}
+
+model TrustScore {
+  id String @id @default(cuid())
+  organizationId String @unique
+  verificationScore Int @default(0)
+  qualityScore Int @default(0)
+  deliveryScore Int @default(0)
+  quoteAccuracyScore Int @default(0)
+  capacityScore Int @default(0)
+  disputeScore Int @default(0)
+  documentationScore Int @default(0)
+  buyerReliabilityScore Int @default(0)
+  overallScore Int @default(0)
+  calculatedAt DateTime @default(now())
+  @@index([overallScore])
+}
+
+model RFQ {
+  id String @id @default(cuid())
+  rfqNumber String @unique
+  buyerOrganizationId String
+  title String
+  category String
+  quantity Decimal @db.Decimal(18, 3)
+  unit String
+  deliveryCity String
+  deliveryDeadline DateTime?
+  quoteDeadline DateTime?
+  technicalNotes String?
+  specificationHash String?
+  qualityRequirements String?
+  rfqQualityScore Int @default(0)
+  riskLevel RiskLevel @default(LOW)
+  status RFQStatus @default(DRAFT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([buyerOrganizationId, status])
+  @@index([category, deliveryCity, status])
+}
+
+model RFQItem {
+  id String @id @default(cuid())
+  rfqId String
+  name String
+  material String?
+  tolerance String?
+  finish String?
+  drawingUrl String?
+  quantity Decimal @db.Decimal(18, 3)
+  unit String
+  createdAt DateTime @default(now())
+  @@index([rfqId])
+}
+
+model SupplierMatch {
+  id String @id @default(cuid())
+  rfqId String
+  supplierOrganizationId String
+  capabilityFit Int
+  capacityFit Int
+  locationFit Int
+  qualityFit Int
+  deliveryFit Int
+  riskPenalty Int @default(0)
+  matchScore Int
+  status MatchStatus @default(INVITED)
+  createdAt DateTime @default(now())
+  @@unique([rfqId, supplierOrganizationId])
+  @@index([rfqId, matchScore])
+}
+
+model Quote {
+  id String @id @default(cuid())
+  rfqId String
+  supplierOrganizationId String
+  totalAmount Decimal @db.Decimal(18, 2)
+  unitPrice Decimal @db.Decimal(18, 4)
+  leadTimeDays Int
+  paymentTerms String?
+  validityDate DateTime?
+  notes String?
+  status QuoteStatus @default(SUBMITTED)
+  submittedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([rfqId, status])
+  @@index([supplierOrganizationId, submittedAt])
+}
+
+model PurchaseOrder {
+  id String @id @default(cuid())
+  orderId String?
+  rfqId String?
+  poNumber String @unique
+  buyerOrganizationId String
+  supplierOrganizationId String
+  amount Decimal @db.Decimal(18, 2)
+  termsHash String
+  acceptedAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([buyerOrganizationId, createdAt])
+  @@index([supplierOrganizationId, createdAt])
+}
+
+model TransactionPassport {
+  id String @id @default(cuid())
+  orderId String @unique
+  rfqId String?
+  buyerOrganizationId String
+  supplierOrganizationId String
+  state String
+  specificationHash String?
+  contractHash String?
+  commissionAmount Decimal? @db.Decimal(18, 2)
+  protectedValue Decimal? @db.Decimal(18, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProductionMilestone {
+  id String @id @default(cuid())
+  orderId String
+  stage String
+  percentComplete Int @default(0)
+  evidenceUrl String?
+  evidenceHash String?
+  note String?
+  verified Boolean @default(false)
+  createdAt DateTime @default(now())
+  @@index([orderId, createdAt])
+}
+
+model Inspection {
+  id String @id @default(cuid())
+  orderId String
+  inspectorOrganizationId String?
+  type String
+  status String @default("PENDING")
+  checklist Json?
+  reportUrl String?
+  evidenceHash String?
+  result String?
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+  @@index([orderId, status])
+}
+
+model Shipment {
+  id String @id @default(cuid())
+  orderId String
+  transporter String?
+  trackingNumber String?
+  lrNumber String?
+  status String @default("PENDING")
+  eta DateTime?
+  podUrl String?
+  podHash String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([orderId, status])
+}
+
+model Commission {
+  id String @id @default(cuid())
+  orderId String
+  grossAmount Decimal @db.Decimal(18, 2)
+  rate Decimal @db.Decimal(6, 3)
+  amount Decimal @db.Decimal(18, 2)
+  status String @default("PENDING")
+  referenceId String?
+  createdAt DateTime @default(now())
+  paidAt DateTime?
+  @@index([status, createdAt])
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+  actorUserId String?
+  organizationId String?
+  orderId String?
+  rfqId String?
+  action AuditAction
+  entityType String
+  entityId String
+  before Json?
+  after Json?
+  ipHash String?
+  userAgentHash String?
+  requestId String?
+  createdAt DateTime @default(now())
+  @@index([entityType, entityId, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([actorUserId, createdAt])
+}
+
+model ContactProtectionEvent {
+  id String @id @default(cuid())
+  rfqId String?
+  orderId String?
+  buyerOrganizationId String?
+  supplierOrganizationId String?
+  eventType String
+  riskLevel RiskLevel
+  masked Boolean @default(true)
+  metadata Json?
+  createdAt DateTime @default(now())
+  @@index([orderId, createdAt])
+  @@index([riskLevel, createdAt])
 }
