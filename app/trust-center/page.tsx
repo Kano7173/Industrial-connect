@@ -1,4 +1,5 @@
 import TrustCenter from '@/components/trust-center';
+import './trust.css';
 
 export const metadata = {
   title: 'Trust Center | Industrial Connect',
