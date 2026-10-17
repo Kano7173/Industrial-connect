@@ -1,5 +1,6 @@
 import './globals.css';
 import './ecosystem.css';
+import './transaction-lab.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
