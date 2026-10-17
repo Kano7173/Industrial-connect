@@ -30,7 +30,7 @@ export default function TrustCenter() {
   return <main className="trust-page">
     <header className="trust-nav">
       <Link href="/" className="trust-brand"><span>IC</span><b>INDUSTRIAL CONNECT</b><small>TRUST INFRASTRUCTURE</small></Link>
-      <div className="trust-nav-actions"><Link href="/control-center">Control Tower</Link><button onClick={() => notify(strict ? 'Strict transaction protection is enabled.' : 'Standard protection is enabled.')}>{strict ? '● Strict mode' : '○ Standard mode'}</button></div>
+      <div className="trust-nav-actions"><Link href="/transaction-lab">Transaction Lab</Link><Link href="/control-center">Control Tower</Link><button onClick={() => notify(strict ? 'Strict transaction protection is enabled.' : 'Standard protection is enabled.')}>{strict ? '● Strict mode' : '○ Standard mode'}</button></div>
     </header>
 
     <section className="trust-hero">
@@ -38,7 +38,7 @@ export default function TrustCenter() {
         <span className="trust-eyebrow">INDUSTRIAL CONNECT / TRUST & RISK</span>
         <h1>Make every industrial transaction <em>verifiable.</em></h1>
         <p>Identity, capability, capacity, commercial evidence, quality, logistics and dispute history are connected into one controlled transaction graph.</p>
-        <div className="trust-hero-actions"><button className="trust-primary" onClick={() => setTab('transaction')}>View transaction protection →</button><button className="trust-secondary" onClick={() => notify('Verification workflow opened for review.')}>Run verification review</button></div>
+        <div className="trust-hero-actions"><button className="trust-primary" onClick={() => setTab('transaction')}>View transaction protection →</button><Link href="/transaction-lab" className="trust-secondary">Run full transaction demo →</Link></div>
       </div>
       <div className="trust-ring"><div><strong>96</strong><span>TRUST<br/>POSTURE</span></div><i>IDENTITY</i><i>CAPACITY</i><i>QUALITY</i><i>PAYMENT</i><i>DELIVERY</i></div>
     </section>
