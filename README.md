@@ -22,3 +22,10 @@ The payment model is intentionally described as protected marketplace payment ra
 `npm install && npx prisma generate && npx prisma migrate dev --name industrialconnect_core && npm run dev`
 
 Legacy static files remain in the repository during deployment migration so the existing public deployment is not destroyed before the Next.js server deployment is configured.
+
+## AI drawing-to-capability studio
+- Supplier prototype: `/dashboard/supplier/capability-studio`
+- Accepts PDF, PNG, JPG and WEBP engineering drawings (10 MB maximum).
+- Server endpoint: `POST /api/capability/analyze-drawing`. Set `OPENAI_API_KEY` in Vercel environment variables; optionally set `OPENAI_DRAWING_MODEL` to a vision-capable model available to your account.
+- AI identifies likely component type and extracts readable properties. Suppliers must review output before publishing.
+- The 3D visual is a category-based illustration, **not** a dimensionally accurate CAD model. Persistent supplier profiles, private long-term file storage, and buyer matching integration are not wired into this prototype. Do not upload confidential customer drawings without permission and a review of the AI provider's data terms.
