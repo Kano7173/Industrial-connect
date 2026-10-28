@@ -38,7 +38,7 @@ export default function RFQWorksHome(){
     <Link href="/" className="brand"><span className="brand-mark">R</span><span><b>RFQ</b>WORKS</span></Link>
     <button className="mobile-menu" onClick={()=>setMenuOpen(v=>!v)} aria-label="Open menu">☰</button>
     <nav className={menuOpen?'main-nav open':'main-nav'}>
-      <a href="#buyers">For Buyers</a><a href="#suppliers">For Suppliers</a><a href="#how">How it works</a><a href="#rfqs">Live RFQs</a><Link href="/suppliers">Manufacturer Network</Link>
+      <a href="#buyers">For Buyers</a><a href="#suppliers">For Suppliers</a><a href="#how">How it works</a><a href="#rfqs">Live RFQs</a><Link href="/dashboard/supplier/capability-studio" className="nav-ai-link">✦ AI Drawing → 3D</Link><Link href="/suppliers">Manufacturer Network</Link>
     </nav>
     <div className="nav-actions"><Link href="/dashboard/buyer/demo" className="nav-link">Login / Demo</Link><Link href="/post-requirement" className="button button-dark">Post requirement <span>↗</span></Link></div>
    </div>
@@ -69,6 +69,27 @@ export default function RFQWorksHome(){
   </section>
 
   <div className="process-ticker"><div>BUYER REQUIREMENT <i>→</i> CAPABILITY MATCH <i>→</i> SUPPLIER QUOTES <i>→</i> ORDER <i>→</i> PRODUCTION <i>→</i> QC <i>→</i> DELIVERY</div></div>
+
+  <section className="ai-capability-highlight" id="ai-drawing">
+   <div className="container ai-capability-inner">
+    <div className="ai-capability-copy">
+     <div className="ai-capability-eyebrow"><span>✦</span> NEW · AI-POWERED MANUFACTURER DISCOVERY</div>
+     <h2>One drawing.<br/><em>A network of capable factories.</em></h2>
+     <p>Suppliers upload past RFQs and engineering drawings. AI helps identify the component, read available specifications and build a searchable capability profile—so buyers can discover manufacturers by the actual parts they can make, not just by company name.</p>
+     <div className="ai-capability-points"><span>01 <b>Identify the part</b></span><span>02 <b>Build capability profile</b></span><span>03 <b>Help buyers find suppliers</b></span></div>
+     <Link href="/dashboard/supplier/capability-studio" className="ai-capability-cta">Try AI drawing studio <span>↗</span></Link>
+     <small className="ai-capability-note">AI suggestions require configuration and supplier review. Generated visuals are concepts, not manufacturing CAD.</small>
+    </div>
+    <div className="ai-capability-visual">
+     <div className="ai-visual-top"><span>CAPABILITY INTELLIGENCE</span><span className="ai-live-chip"><i/> DRAWING → PROFILE</span></div>
+     <div className="ai-drawing-card"><div className="ai-drawing-icon">▧</div><div><b>Historical engineering drawing</b><small>PDF / JPG / PNG · supplier-owned files</small></div><span className="ai-check">✓</span></div>
+     <div className="ai-flow-line"><span>✦</span><i>AI extracts product signals</i></div>
+     <div className="ai-profile-card"><div className="ai-profile-art"><div className="ai-part-ring"/><div className="ai-part-hole"/></div><div className="ai-profile-info"><small>DETECTED COMPONENT · EXAMPLE</small><b>Precision machined component</b><span>CNC turning · Milling · Material review</span><div className="ai-tags"><i>PART TYPE</i><i>PROCESS</i><i>SPEC REVIEW</i></div></div></div>
+     <div className="ai-buyer-match"><span>BUYER SEARCH</span><b>Find suppliers by capability</b><span className="ai-match-arrow">→</span></div>
+     <div className="ai-visual-footer">PRIVATE UNTIL SUPPLIER APPROVAL <span>•</span> SEARCHABLE CAPABILITY PROFILES</div>
+    </div>
+   </div>
+  </section>
 
   <section className="supplier-trust-flow">
    <div className="container">
