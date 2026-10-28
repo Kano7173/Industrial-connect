@@ -14,7 +14,7 @@ export default function SupplierDemo(){
  const dispatch=()=>add('LR / dispatch copy received','DISPATCHED');
  return <main className="app-page"><div className="app-shell">
   <div className="app-top"><Link href="/" className="brand"><span className="brand-mark">R</span><span><b>RFQ</b>WORKS</span></Link><span className="app-kicker">SUPPLIER DEMO</span></div>
-  <nav className="demo-nav"><Link href="/dashboard/buyer/demo">Buyer</Link><Link href="/dashboard/supplier/demo">Supplier</Link><Link href="/dashboard/admin/disputes/demo">Admin</Link><Link href="/suppliers">Supplier network</Link></nav>
+  <nav className="demo-nav"><Link href="/dashboard/buyer/demo">Buyer</Link><Link href="/dashboard/supplier/demo">Supplier</Link><Link href="/dashboard/supplier/capability-studio">AI drawing studio</Link><Link href="/dashboard/admin/disputes/demo">Admin</Link><Link href="/suppliers">Supplier network</Link></nav>
   <div className="demo-banner notice-demo">WORKING DEMO — supplier actions update the same browser-stored order used by the buyer and admin rooms.</div>
   <div className="demo-grid">
    <section className="app-card"><div className="app-kicker">SUPPLIER ORDER ROOM</div><h1>RFQ-1048</h1><div className="status-banner">🛡 Funds protected · Order value ₹8.42L</div>
