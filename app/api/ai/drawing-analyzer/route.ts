@@ -34,10 +34,14 @@ const schema = {
   ],
 };
 
+const models = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'];
+
 export async function POST(request: NextRequest) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: 'AI service is not configured. Please contact the Industrial Connect admin.' }, { status: 503 });
+    return NextResponse.json({
+      error: 'AI service is not configured on this deployment. Please redeploy the latest Industrial Connect version after adding GEMINI_API_KEY in Vercel.'
+    }, { status: 503 });
   }
 
   try {
@@ -66,45 +70,57 @@ Create a concise supplierChecklist focused on quotation and production readiness
 
 This is decision support, not certified engineering inspection. Flag anything ambiguous instead of guessing.`;
 
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey,
+    const body = {
+      contents: [{
+        role: 'user',
+        parts: [
+          { text: prompt },
+          { inlineData: { mimeType: file.type, data: base64 } },
+        ],
+      }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: schema,
       },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            { inlineData: { mimeType: file.type, data: base64 } },
-          ],
-        }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          responseSchema: schema,
-          thinkingConfig: { thinkingLevel: 'low' },
+    };
+
+    let lastMessage = 'The AI service could not analyze this drawing.';
+
+    for (const model of models) {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
         },
-      }),
-    });
+        body: JSON.stringify(body),
+      });
 
-    const payload = await response.json();
-    if (!response.ok) {
-      console.error('Gemini drawing analyzer error:', payload);
-      const message = payload?.error?.message || 'The AI service could not analyze this drawing.';
-      return NextResponse.json({ error: message }, { status: 502 });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        lastMessage = payload?.error?.message || `Gemini ${model} returned HTTP ${response.status}.`;
+        console.error(`Gemini drawing analyzer error (${model}):`, payload);
+        continue;
+      }
+
+      const text = payload?.candidates?.[0]?.content?.parts?.find((p: any) => p.text)?.text;
+      if (!text) {
+        lastMessage = 'The AI returned no analysis. Please try again.';
+        continue;
+      }
+
+      try {
+        const analysis = JSON.parse(text);
+        return NextResponse.json({ analysis, fileName: file.name, model });
+      } catch (error) {
+        console.error(`Gemini JSON parse error (${model}):`, error, text.slice(0, 500));
+        lastMessage = 'The AI returned an incomplete result. Please try again.';
+      }
     }
 
-    const text = payload?.candidates?.[0]?.content?.parts?.find((p: any) => p.text)?.text;
-    if (!text) return NextResponse.json({ error: 'The AI returned no analysis. Please try again.' }, { status: 502 });
-
-    let analysis;
-    try {
-      analysis = JSON.parse(text);
-    } catch {
-      return NextResponse.json({ error: 'The AI returned an incomplete result. Please try again.' }, { status: 502 });
-    }
-
-    return NextResponse.json({ analysis, fileName: file.name });
+    return NextResponse.json({
+      error: `AI analysis failed: ${lastMessage}`
+    }, { status: 502 });
   } catch (error) {
     console.error('Drawing analyzer route error:', error);
     return NextResponse.json({ error: 'Could not reach the AI analyzer. Please try again.' }, { status: 500 });
