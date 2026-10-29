@@ -30,7 +30,7 @@ const schema = {
   ],
 };
 
-const model = 'gemini-3.5-flash-lite';
+const model = 'models/gemini-3.5-flash-lite';
 const allowedTypes = new Set(['application/pdf', 'image/png', 'image/jpeg', 'image/webp']);
 
 export async function POST(request: NextRequest) {
@@ -56,7 +56,7 @@ Create a concise supplierChecklist and a professional rfqSummary suitable for an
 
     const fileInput = file.type === 'application/pdf'
       ? { type: 'document', mime_type: file.type, data: base64 }
-      : { type: 'image', mime_type: file.type, data: base64 };
+      : { type: 'image', mime_type: file.type, data: base64, resolution: 'ultra_high' };
 
     const body = {
       model,
@@ -69,12 +69,13 @@ Create a concise supplierChecklist and a professional rfqSummary suitable for an
         mime_type: 'application/json',
         schema,
       },
+      generation_config: { max_output_tokens: 4096 },
       // Engineering drawings are processed statelessly and are not stored as conversation history.
       store: false,
     };
 
     const controller = AbortSignal.timeout(48_000);
-    const response = await fetch('https://generativelanguage.googleapis.com/v1/interactions', {
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify(body),
