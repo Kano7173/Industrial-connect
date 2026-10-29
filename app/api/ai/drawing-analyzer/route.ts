@@ -86,7 +86,10 @@ This is decision support, not certified engineering inspection. Flag anything am
 
     let lastMessage = 'The AI service could not analyze this drawing.';
 
+    const deadline = Date.now() + 48_000;
     for (const model of models) {
+      const remaining = deadline - Date.now();
+      if (remaining <= 1_000) break;
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method: 'POST',
         headers: {
@@ -94,6 +97,7 @@ This is decision support, not certified engineering inspection. Flag anything am
           'x-goog-api-key': apiKey,
         },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(remaining),
       });
 
       const payload = await response.json().catch(() => ({}));
@@ -111,56 +115,10 @@ This is decision support, not certified engineering inspection. Flag anything am
 
       try {
         const analysis = JSON.parse(text);
+        // Return technical analysis immediately. Visual generation runs in a separate request
+        // so a slow image model can never make the core analyzer hit Vercel's timeout.
+        return NextResponse.json({ analysis, visualPreview: null, fileName: file.name, model });
 
-        // Generate an illustrative 3D-style visual from the original drawing.
-        // This is intentionally optional: a visual-generation failure must not block the technical analysis.
-        let visualPreview: string | null = null;
-        try {
-          const visualResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-goog-api-key': apiKey,
-            },
-            body: JSON.stringify({
-              contents: [{
-                role: 'user',
-                parts: [
-                  {
-                    text: `Create a clean, photorealistic 3D CAD-style product visualization of the physical component shown in this engineering drawing.
-Use the drawing as the visual reference. Preserve the main silhouette, proportions, holes, slots, shoulders, grooves, flanges and other clearly visible features as closely as possible.
-Show one isolated component in a three-quarter isometric view, neutral light-grey machined metal, soft studio lighting, plain off-white background, crisp edges, realistic manufacturing surface.
-Do not include people, hands, tools, factory scenes, labels, dimensions, annotations, logos or extra components.
-Part identified by drawing analysis: ${analysis.partName || 'Unspecified component'}.
-Part type: ${analysis.partType || 'Unspecified'}.
-Likely process: ${(analysis.manufacturingProcess || []).join(', ') || 'Not specified'}.
-Important: this is an illustrative concept preview only. Do not invent hidden geometry or claim engineering accuracy. If the drawing does not clearly establish the shape, show a conservative simplified concept rather than adding complex features.`,
-                  },
-                  { inlineData: { mimeType: file.type, data: base64 } },
-                ],
-              }],
-              generationConfig: {
-                responseModalities: ['TEXT', 'IMAGE'],
-                imageConfig: { aspectRatio: '4:3', imageSize: '1K' },
-              },
-            }),
-          });
-          if (visualResponse.ok) {
-            const visualPayload = await visualResponse.json().catch(() => ({}));
-            const imagePart = visualPayload?.candidates?.[0]?.content?.parts?.find((part: any) => part.inlineData?.data);
-            if (imagePart?.inlineData?.data) {
-              const mimeType = imagePart.inlineData.mimeType || 'image/png';
-              visualPreview = `data:${mimeType};base64,${imagePart.inlineData.data}`;
-            }
-          } else {
-            const visualError = await visualResponse.text().catch(() => '');
-            console.warn('Gemini 3D visual preview unavailable:', visualResponse.status, visualError.slice(0, 300));
-          }
-        } catch (visualError) {
-          console.warn('Gemini 3D visual preview failed:', visualError);
-        }
-
-        return NextResponse.json({ analysis, visualPreview, fileName: file.name, model });
       } catch (error) {
         console.error(`Gemini JSON parse error (${model}):`, error, text.slice(0, 500));
         lastMessage = 'The AI returned an incomplete result. Please try again.';
