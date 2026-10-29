@@ -30,7 +30,7 @@ const schema = {
   ],
 };
 
-const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+const model = 'gemini-3.5-flash-lite';
 const allowedTypes = new Set(['application/pdf', 'image/png', 'image/jpeg', 'image/webp']);
 
 export async function POST(request: NextRequest) {
@@ -54,52 +54,80 @@ Extract only information clearly visible or strongly supported by the drawing. N
 Preserve dimension values and units exactly as written. Do not infer missing dimensions from the drawing scale. Suggest practical manufacturing processes, but mark uncertain suggestions clearly.
 Create a concise supplierChecklist and a professional rfqSummary suitable for an RFQ. This is decision support, not certified engineering inspection.`;
 
+    const fileInput = file.type === 'application/pdf'
+      ? { type: 'document', mime_type: file.type, data: base64 }
+      : { type: 'image', mime_type: file.type, data: base64 };
+
     const body = {
-      contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType: file.type, data: base64 } }] }],
-      generationConfig: { responseMimeType: 'application/json', responseSchema: schema, temperature: 0.1 },
+      model,
+      input: [
+        { type: 'text', text: prompt },
+        fileInput,
+      ],
+      response_format: {
+        type: 'text',
+        mime_type: 'application/json',
+        schema,
+      },
+      // Engineering drawings are processed statelessly and are not stored as conversation history.
+      store: false,
     };
 
-    let lastMessage = 'The AI provider did not return an analysis.';
-    const deadline = Date.now() + 48_000;
-    for (const model of models) {
-      const remaining = deadline - Date.now();
-      if (remaining < 2_000) break;
-      try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(Math.min(remaining, 38_000)),
-          cache: 'no-store',
-        });
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          lastMessage = payload?.error?.message || `AI provider returned HTTP ${response.status}.`;
-          console.error('Drawing analysis provider response:', { model, status: response.status, message: lastMessage });
-          continue;
-        }
-        const candidate = payload?.candidates?.[0];
-        const outputText = candidate?.content?.parts?.find((part: any) => typeof part.text === 'string')?.text;
-        if (!outputText) {
-          lastMessage = candidate?.finishReason === 'SAFETY' ? 'The provider could not process this drawing. Try a clean crop without unrelated content.' : 'The AI returned an empty result. Please try again with a clearer drawing.';
-          continue;
-        }
-        const analysis = JSON.parse(outputText);
-        if (!analysis || typeof analysis !== 'object' || typeof analysis.partName !== 'string' || !Array.isArray(analysis.dimensions) || !Array.isArray(analysis.missingInformation)) {
-          lastMessage = 'The AI response was incomplete. Please retry with a clearer drawing.';
-          continue;
-        }
-        return NextResponse.json({ analysis, fileName: file.name, model }, { headers: { 'Cache-Control': 'no-store' } });
-      } catch (providerError) {
-        lastMessage = providerError instanceof Error && providerError.name === 'TimeoutError'
-          ? 'The drawing took too long to process. Try a smaller PDF or a higher-contrast image.'
-          : 'The AI service could not be reached. Please try again in a moment.';
-        console.error('Drawing analysis attempt failed:', { model, message: providerError instanceof Error ? providerError.message : 'unknown error' });
-      }
+    const controller = AbortSignal.timeout(48_000);
+    const response = await fetch('https://generativelanguage.googleapis.com/v1/interactions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify(body),
+      signal: controller,
+      cache: 'no-store',
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const providerMessage = payload?.error?.message || `AI provider returned HTTP ${response.status}.`;
+      console.error('Drawing analysis Interactions API error:', { model, status: response.status, message: providerMessage });
+      const safeMessage = response.status === 404 || response.status === 400
+        ? 'The AI model or request configuration was rejected. Please contact Industrial Connect support.'
+        : response.status === 429
+          ? 'The AI service is temporarily busy. Please wait a minute and try again.'
+          : 'The AI service could not complete this drawing. Please try again shortly.';
+      return NextResponse.json({ error: safeMessage }, { status: response.status === 429 ? 429 : 502 });
     }
-    return NextResponse.json({ error: lastMessage }, { status: 502 });
+
+    const outputText = Array.isArray(payload?.steps)
+      ? payload.steps
+          .filter((step: any) => step?.type === 'model_output')
+          .flatMap((step: any) => Array.isArray(step?.content) ? step.content : [])
+          .filter((item: any) => item?.type === 'text' && typeof item.text === 'string')
+          .map((item: any) => item.text)
+          .join('\n')
+      : '';
+
+    if (!outputText) {
+      console.error('Drawing analysis returned no model output:', { model, status: payload?.status });
+      return NextResponse.json({ error: 'The AI returned an empty result. Please try again with a clearer drawing.' }, { status: 502 });
+    }
+
+    let analysis: any;
+    try {
+      analysis = JSON.parse(outputText);
+    } catch {
+      console.error('Drawing analysis returned invalid JSON.');
+      return NextResponse.json({ error: 'The AI response was not readable. Please retry with a clearer drawing.' }, { status: 502 });
+    }
+
+    if (!analysis || typeof analysis !== 'object' || typeof analysis.partName !== 'string' || !Array.isArray(analysis.dimensions) || !Array.isArray(analysis.missingInformation)) {
+      return NextResponse.json({ error: 'The AI response was incomplete. Please retry with a clearer drawing.' }, { status: 502 });
+    }
+
+    return NextResponse.json({ analysis, fileName: file.name, model }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
+    const timedOut = error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError');
     console.error('Drawing analyzer request failed:', error instanceof Error ? error.message : 'unknown error');
-    return NextResponse.json({ error: 'The drawing could not be processed. Please retry, or upload it as a PNG/JPG image.' }, { status: 500 });
+    return NextResponse.json({
+      error: timedOut
+        ? 'The drawing took too long to process. Try a smaller PDF or a higher-contrast image.'
+        : 'The drawing could not be processed. Please retry, or upload it as a PNG/JPG image.',
+    }, { status: timedOut ? 504 : 500 });
   }
 }
