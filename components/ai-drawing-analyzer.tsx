@@ -21,12 +21,14 @@ export default function AiDrawingAnalyzer() {
   const [file, setFile] = useState<File | null>(null);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [visualPreview, setVisualPreview] = useState<string | null>(null);
+  const [visualLoading, setVisualLoading] = useState(false);
+  const [visualError, setVisualError] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [dragging, setDragging] = useState(false);
 
   function choose(next: File | null) {
-    setError(''); setAnalysis(null); setVisualPreview(null);
+    setError(''); setAnalysis(null); setVisualPreview(null); setVisualLoading(false); setVisualError('');
     if (!next) return;
     const allowed = ['application/pdf','image/png','image/jpeg','image/webp'];
     if (!allowed.includes(next.type)) return setError('Please upload a PDF, PNG, JPG or WEBP drawing.');
@@ -36,14 +38,29 @@ export default function AiDrawingAnalyzer() {
 
   async function analyze() {
     if (!file) return;
-    setLoading(true); setError(''); setAnalysis(null); setVisualPreview(null);
+    setLoading(true); setError(''); setAnalysis(null); setVisualPreview(null); setVisualLoading(false); setVisualError('');
     const body = new FormData(); body.append('file', file);
     try {
       const res = await fetch('/api/ai/drawing-analyzer', { method: 'POST', body });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Analysis failed. Please try again.');
       setAnalysis(data.analysis);
-      setVisualPreview(typeof data.visualPreview === 'string' ? data.visualPreview : null);
+      setLoading(false);
+      // The optional image runs separately so image generation cannot block analysis.
+      setVisualLoading(true);
+      const visualBody = new FormData();
+      visualBody.append('file', file);
+      visualBody.append('partName', data.analysis?.partName || 'Unspecified component');
+      visualBody.append('partType', data.analysis?.partType || 'Unspecified');
+      fetch('/api/ai/drawing-visual', { method: 'POST', body: visualBody })
+        .then(async visualRes => {
+          const visualData = await visualRes.json().catch(() => ({}));
+          if (!visualRes.ok) throw new Error(visualData.error || 'Preview unavailable.');
+          if (typeof visualData.visualPreview === 'string') setVisualPreview(visualData.visualPreview);
+          else throw new Error('No preview image was returned.');
+        })
+        .catch(err => setVisualError(err instanceof Error ? err.message : 'Preview unavailable.'))
+        .finally(() => setVisualLoading(false));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Analysis failed. Please try again.');
     } finally { setLoading(false); }
@@ -92,7 +109,7 @@ export default function AiDrawingAnalyzer() {
           <div><div className="ai-eyebrow">3D CONCEPT PREVIEW</div><h4>What this part may look like</h4><p>Visual reference to help suppliers understand the component before quoting.</p></div>
           <span>AI GENERATED</span>
         </div>
-        {visualPreview ? <img className="ai-visual-image" src={visualPreview} alt={`AI-generated 3D concept preview of ${analysis.partName}`} /> : <div className="ai-visual-fallback">3D preview could not be generated for this drawing. Use the original engineering drawing and extracted details for quotation.</div>}
+        {visualPreview ? <img className="ai-visual-image" src={visualPreview} alt={`AI-generated 3D concept preview of ${analysis.partName}`} /> : visualLoading ? <div className="ai-visual-fallback">Generating the optional 3D concept preview… Your drawing analysis is complete and ready to use.</div> : <div className="ai-visual-fallback">{visualError || 'A visual preview is not available for this drawing. Your extracted specifications and RFQ summary are ready to use.'}</div>}
         <div className="ai-visual-note">Concept visualization only — not a dimensionally accurate CAD model. Verify all geometry and dimensions against the original drawing before quoting or manufacturing.</div>
       </div>
       <div className="ai-grid">{labels.map(([k,l])=><div className="ai-field" key={String(k)}><small>{l}</small><strong>{String(analysis[k])}</strong></div>)}</div>
